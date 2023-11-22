@@ -1,4 +1,3 @@
 mod maths;
 
-#[cfg(test)]
-mod tests;
+pub use maths::Stats;

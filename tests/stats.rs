@@ -1,4 +1,4 @@
-use crate::maths::Stats;
+use vec_utilities::Stats;
 
 #[test]
 fn test_mean() {
@@ -6,7 +6,19 @@ fn test_mean() {
 
     let mean = test_vec.mean();
 
-    assert_eq!(mean.unwrap(), 2.0)
+    assert_eq!(mean.unwrap(), 2.0);
+
+    let test_vec = vec![1, 2];
+
+    let mean = test_vec.mean();
+
+    assert_eq!(mean.unwrap(), 1); // Cast truncates and doesn't round
+
+    let test_vec = vec![1, 2, 3];
+
+    let mean = test_vec.mean();
+
+    assert_eq!(mean.unwrap(), 2);
 }
 
 #[test]
@@ -43,6 +55,12 @@ fn test_mode() {
     let mode = test_vec.mode();
 
     assert_eq!(mode.unwrap(), 5.0);
+
+    let test_vec = vec![1, 2, 3, 4, 5, 5, 5];
+
+    let mode = test_vec.mode();
+
+    assert_eq!(mode.unwrap(), 5);
 }
 
 #[test]
@@ -100,4 +118,14 @@ fn test_nan_std() {
     let std = test_vec.nan_std();
 
     assert_eq!(std.unwrap(), 2.0);
+}
+
+#[test]
+fn huge_mean_test() {
+    println!("One over max vec size: {}", (u16::MAX as usize) + 1);
+    let test_vec = vec![1.0; (u16::MAX as usize) + 1];
+
+    let mean = test_vec.mean();
+
+    assert_ne!(mean.unwrap(), 1.0);
 }
