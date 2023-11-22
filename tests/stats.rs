@@ -12,13 +12,13 @@ fn test_mean() {
 
     let mean = test_vec.mean();
 
-    assert_eq!(mean.unwrap(), 1); // Cast truncates and doesn't round
+    assert_eq!(mean.unwrap(), 1.5); // Cast truncates and doesn't round
 
     let test_vec = vec![1, 2, 3];
 
     let mean = test_vec.mean();
 
-    assert_eq!(mean.unwrap(), 2);
+    assert_eq!(mean.unwrap(), 2.0);
 }
 
 #[test]
@@ -118,14 +118,4 @@ fn test_nan_std() {
     let std = test_vec.nan_std();
 
     assert_eq!(std.unwrap(), 2.0);
-}
-
-#[test]
-fn huge_mean_test() {
-    println!("One over max vec size: {}", (u16::MAX as usize) + 1);
-    let test_vec = vec![1.0; (u16::MAX as usize) + 1];
-
-    let mean = test_vec.mean();
-
-    assert_ne!(mean.unwrap(), 1.0);
 }
