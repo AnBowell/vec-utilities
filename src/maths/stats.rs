@@ -34,8 +34,8 @@ trait Operations:
 {
     fn _is_nan(&self) -> bool;
     fn _total_cmp(&self, b: &Self) -> Ordering;
-    fn _powf(&self, p: Self) -> Self;
-    fn _sqrt(&self) -> Self;
+    fn _powf(&self, p: f64) -> f64;
+    fn _sqrt(&self) -> f64;
 }
 
 macro_rules! impl_float_functions {
@@ -49,12 +49,12 @@ macro_rules! impl_float_functions {
                 self.total_cmp(b)
             }
 
-            fn _powf(&self, p: Self) -> Self {
-                self.powf(p)
+            fn _powf(&self, p: f64) -> f64 {
+                Into::<f64>::into(*self).powf(p)
             }
 
-            fn _sqrt(&self) -> Self {
-                self.sqrt()
+            fn _sqrt(&self) -> f64 {
+                Into::<f64>::into(*self).sqrt()
             }
         }
     };
@@ -70,12 +70,12 @@ macro_rules! impl_non_float_functions {
                 self.cmp(b)
             }
 
-            fn _powf(&self, p: Self) -> Self {
-                self.pow(p as u32)
+            fn _powf(&self, p: f64) -> f64 {
+                Into::<f64>::into(*self).powf(p)
             }
 
-            fn _sqrt(&self) -> Self {
-                (*self as f64).sqrt() as Self
+            fn _sqrt(&self) -> f64 {
+                Into::<f64>::into(*self).sqrt()
             }
         }
     };
