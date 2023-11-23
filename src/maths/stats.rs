@@ -1,41 +1,45 @@
 use std::{cmp::Ordering, collections::HashMap, fmt::Debug, str::FromStr};
 
-pub trait Stats<T>
+pub trait Stats<I, O>
 where
-    T: std::str::FromStr,
+    I: std::str::FromStr,
 {
-    fn mean(&self) -> Option<f64>; //f64--> f64, f32-> f32,
-    fn nan_mean(&self) -> Option<f64>;
-    fn median(self) -> Option<f64>;
-    fn nan_median(&self) -> Option<f64>;
-    fn mode(&self) -> Option<T>
+    fn mean(&self) -> Option<O>; //f64--> f64, f32-> f32,
+                                 // fn nan_mean(&self) -> Option<O>;
+    fn median(self) -> Option<O>
     where
-        <T as FromStr>::Err: Debug;
-
-    fn nan_mode(&self) -> Option<T>
+        I: Operations;
+    // fn nan_median(&self) -> Option<O>;
+    fn mode(&self) -> Option<O>
     where
-        <T as FromStr>::Err: Debug;
+        I: Operations + std::fmt::Display,
+        <O as FromStr>::Err: Debug,
+        O: std::str::FromStr;
 
-    fn variance(&self) -> Option<f64>;
-    fn nan_variance(&self) -> Option<f64>;
-    fn std(&self) -> Option<f64>;
-    fn nan_std(&self) -> Option<f64>;
+    // fn nan_mode(&self) -> Option<O>
+    // where
+    //     <I as FromStr>::Err: Debug;
+
+    // fn variance(&self) -> Option<O>;
+    // fn nan_variance(&self) -> Option<O>;
+    // fn std(&self) -> Option<O>;
+    // fn nan_std(&self) -> Option<O>;
 }
 
-trait Operations:
-    Into<f64>
-    + Sized
-    + Clone
-    + ToString
-    + FromStr
-    + Copy
-    + for<'a> std::iter::Sum<&'a Self>
-    + std::iter::Sum
+pub trait Operations
+// Into<f64>
+// + Sized
+// + Clone
+// + ToString
+// + FromStr
+// + Copy
+// + for<'a> std::iter::Sum<&'a Self>
+// + std::iter::Sum
 {
     fn _is_nan(&self) -> bool;
     fn _total_cmp(&self, b: &Self) -> Ordering;
-    fn _powf(&self, p: f64) -> f64;
-    fn _sqrt(&self) -> f64;
+    // fn _powf(&self, p: &Self) -> &Self;
+    // fn _sqrt(&self) -> &Self;
 }
 
 macro_rules! impl_float_functions {
@@ -49,13 +53,13 @@ macro_rules! impl_float_functions {
                 self.total_cmp(b)
             }
 
-            fn _powf(&self, p: f64) -> f64 {
-                Into::<f64>::into(*self).powf(p)
-            }
+            // fn _powf(&self, p: &Self) -> $float {
+            //     self.powf(*p)
+            // }
 
-            fn _sqrt(&self) -> f64 {
-                Into::<f64>::into(*self).sqrt()
-            }
+            // fn _sqrt(&self) -> $float {
+            //     self.sqrt()
+            // }
         }
     };
 }
@@ -70,52 +74,80 @@ macro_rules! impl_non_float_functions {
                 self.cmp(b)
             }
 
-            fn _powf(&self, p: f64) -> f64 {
-                Into::<f64>::into(*self).powf(p)
-            }
+            // fn _powf(&self, p: &Self) -> $non_float {
+            //     self.pow(p.into())
+            // }
 
-            fn _sqrt(&self) -> f64 {
-                Into::<f64>::into(*self).sqrt()
-            }
+            // fn _sqrt(&self) -> $non_float {
+            //     self.sqrt()
+            // }
         }
     };
 }
 
 impl_float_functions!(f64);
 impl_float_functions!(f32);
-// impl_non_float_functions!(i64);
+impl_non_float_functions!(i64);
 impl_non_float_functions!(i32);
-// impl_non_float_functions!(u64);
+impl_non_float_functions!(u64);
 impl_non_float_functions!(u32);
 
-impl<T> Stats<T> for Vec<T>
+impl<I, O> Stats<I, O> for Vec<I>
 where
-    T: Operations,
+    I: Copy + std::str::FromStr + std::default::Default + std::ops::Add<Output = I> + Into<O>,
+    O: Copy
+        + std::default::Default
+        + From<u8>
+        + std::ops::Add<Output = O>
+        + std::ops::Div<Output = O>,
 {
-    fn mean(&self) -> Option<f64> {
-        if self.len() > 0 {
-            return Some(self.iter().map(|x| x).sum::<T>().into() / self.len() as f64);
-        } else {
+    fn mean(&self) -> Option<O> {
+        let mut count: O = Default::default();
+        let mut sum: I = Default::default();
+
+        let add = Into::<O>::into(1_u8);
+
+        if self.is_empty() {
             return None;
         }
-    }
 
-    fn nan_mean(&self) -> Option<f64> {
-        if self.len() > 0 {
-            return Some(
-                self.iter()
-                    .map(|x| x)
-                    .filter(|x| !x._is_nan())
-                    .sum::<T>()
-                    .into()
-                    / self.iter().filter(|x| !x._is_nan()).count() as f64,
-            );
-        } else {
-            return None;
+        for item in self {
+            sum = sum + *item;
+            count = count + add;
         }
+
+        return Some(Into::<O>::into(sum) / count);
     }
 
-    fn median(mut self) -> Option<f64> {
+    // fn nan_mean(&self) -> Option<O> {
+    //     if self.len() > 0 {
+    //         return Some(
+    //             self.iter()
+    //                 .map(|x| x)
+    //                 .filter(|x| !x._is_nan())
+    //                 .sum::<I>()
+    //                 .into()
+    //                 / self.iter().filter(|x| !x._is_nan()).count() as f64,
+    //         );
+    //     } else {
+    //         return None;
+    //     }
+    // }
+
+    fn median(mut self) -> Option<O>
+    where
+        I: Operations
+            + Copy
+            + std::str::FromStr
+            + std::default::Default
+            + std::ops::Add<Output = I>
+            + Into<O>,
+        O: Copy
+            + std::default::Default
+            + std::ops::Add<Output = O>
+            + std::ops::Div<Output = O>
+            + From<u8>,
+    {
         // Median consumes self because we need to sort the vec
         // This means the programmer can choose whether to `.clone().median()` for a performance hit
         // Or `.median()` if they no longer need the `Vec` after this
@@ -135,33 +167,48 @@ where
         if n % 2 == 1 {
             return Some(self[mid_index].into());
         } else {
-            return Some((self[mid_index - 1].into() + self[mid_index + 1].into()) / 2.0);
+            return Some((self[mid_index - 1] + self[mid_index + 1]).into() / 2_u8.into());
         }
     }
 
-    fn nan_median(&self) -> Option<f64> {
-        // Unlike median, I think we need to make a new vec in memory here, so
-        // there would be no performance benefit of passing by value. Thus,
-        // unlike `median`, we take a reference.
+    // fn nan_median(&self) -> Option<O> {
+    //     // Unlike median, I think we need to make a new vec in memory here, so
+    //     // there would be no performance benefit of passing by value. Thus,
+    //     // unlike `median`, we take a reference.
 
-        let n = self.len();
+    //     let n = self.len();
 
-        if n == 0 {
-            return None;
-        }
+    //     if n == 0 {
+    //         return None;
+    //     }
 
-        let no_nans = self
-            .iter()
-            .filter(|&x| !x._is_nan())
-            .cloned()
-            .collect::<Vec<T>>();
+    //     let no_nans = self
+    //         .iter()
+    //         .filter(|&x| !x._is_nan())
+    //         .cloned()
+    //         .collect::<Vec<T>>();
 
-        return no_nans.median();
-    }
+    //     return no_nans.median();
+    // }
 
-    fn mode(&self) -> Option<T>
+    fn mode(&self) -> Option<O>
     where
-        <T as FromStr>::Err: Debug,
+        I: Operations
+            + Copy
+            + std::str::FromStr
+            + std::default::Default
+            + std::ops::Add<Output = I>
+            + Into<O>
+            + ToString
+            + std::fmt::Display
+            + FromStr,
+        O: Copy
+            + std::default::Default
+            + std::ops::Add<Output = O>
+            + std::ops::Div<Output = O>
+            + From<u8>
+            + std::str::FromStr,
+        <O as FromStr>::Err: Debug,
     {
         fn insert_map(num: String, m: &mut HashMap<String, usize>) {
             if let Some(x) = m.get_mut(&num) {
@@ -189,76 +236,76 @@ where
             }
         }
 
-        return Some(mode_float.parse::<T>().unwrap());
+        return Some(mode_float.parse::<O>().unwrap());
     }
 
-    fn nan_mode(&self) -> Option<T>
-    where
-        <T as FromStr>::Err: Debug,
-    {
-        let n = self.len();
+    // fn nan_mode(&self) -> Option<O>
+    // where
+    //     <I as FromStr>::Err: Debug,
+    // {
+    //     let n = self.len();
 
-        if n == 0 {
-            return None;
-        }
+    //     if n == 0 {
+    //         return None;
+    //     }
 
-        let no_nans = self
-            .iter()
-            .filter(|&x| !x._is_nan())
-            .cloned()
-            .collect::<Vec<T>>();
+    //     let no_nans = self
+    //         .iter()
+    //         .filter(|&x| !x._is_nan())
+    //         .cloned()
+    //         .collect::<Vec<T>>();
 
-        return no_nans.mode();
-    }
+    //     return no_nans.mode();
+    // }
 
-    fn variance(&self) -> Option<f64> {
-        let n = self.len();
+    // fn variance(&self) -> Option<O> {
+    //     let n = self.len();
 
-        if n == 0 {
-            return None;
-        }
+    //     if n == 0 {
+    //         return None;
+    //     }
 
-        let mean = self.mean()?;
+    //     let mean = self.mean()?;
 
-        return Some(
-            self.iter()
-                .map(|x| (Into::<f64>::into(*x) - mean).powf(2.0))
-                .sum::<f64>()
-                / (n as f64),
-        );
-    }
+    //     return Some(
+    //         self.iter()
+    //             .map(|x| (Into::<f64>::into(*x) - mean).powf(2.0))
+    //             .sum::<f64>()
+    //             / (n as f64),
+    //     );
+    // }
 
-    fn nan_variance(&self) -> Option<f64> {
-        let n = self.len();
+    // fn nan_variance(&self) -> Option<O> {
+    //     let n = self.len();
 
-        if n == 0 {
-            return None;
-        }
+    //     if n == 0 {
+    //         return None;
+    //     }
 
-        let no_nan: Vec<T> = self.iter().filter(|x| !x._is_nan()).cloned().collect();
+    //     let no_nan: Vec<T> = self.iter().filter(|x| !x._is_nan()).cloned().collect();
 
-        return no_nan.variance();
-    }
+    //     return no_nan.variance();
+    // }
 
-    fn std(&self) -> Option<f64> {
-        return match self.variance() {
-            Some(x) => Some(x.sqrt()),
-            None => None,
-        };
-    }
+    // fn std(&self) -> Option<O> {
+    //     return match self.variance() {
+    //         Some(x) => Some(x.sqrt()),
+    //         None => None,
+    //     };
+    // }
 
-    fn nan_std(&self) -> Option<f64> {
-        let n = self.len();
+    // fn nan_std(&self) -> Option<I> {
+    //     let n = self.len();
 
-        if n == 0 {
-            return None;
-        }
+    //     if n == 0 {
+    //         return None;
+    //     }
 
-        let no_nan: Vec<T> = self.iter().filter(|x| !x._is_nan()).cloned().collect();
+    //     let no_nan: Vec<I> = self.iter().filter(|x| !x._is_nan()).cloned().collect();
 
-        return match no_nan.variance() {
-            Some(x) => Some(x.sqrt()),
-            None => None,
-        };
-    }
+    //     return match no_nan.variance() {
+    //         Some(x) => Some(x.sqrt()),
+    //         None => None,
+    //     };
+    // }
 }
