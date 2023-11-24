@@ -1,7 +1,9 @@
 use vec_utilities::generation::arange;
 
 #[test]
-fn test_arange(){
-    let x = arange(2, 1000, 2);
-    println!("x: {:?}",x)
+fn test_arange() {
+    let x = arange(-1.0, 10.0, 0.25).unwrap();
+    println!("x: {:?}", x);
+
+    println!("{}", x.len());
 }
